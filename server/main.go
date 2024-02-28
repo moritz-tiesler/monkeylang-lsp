@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/tliron/commonlog"
@@ -18,22 +19,25 @@ const lsName = "Monkeylang"
 
 var version string = "0.0.1"
 var handler protocol.Handler
+var myServer *server.Server
 
 func main() {
 	path := "/tmp/lsp.log"
 	commonlog.Configure(1, &path)
 
 	handler = protocol.Handler{
-		Initialize:            initialize,
-		Initialized:           initialized,
-		Shutdown:              shutdown,
-		SetTrace:              setTrace,
-		TextDocumentDidChange: didChange,
+		Initialize:                     initialize,
+		Initialized:                    initialized,
+		Shutdown:                       shutdown,
+		SetTrace:                       setTrace,
+		TextDocumentDidChange:          didChange,
+		TextDocumentCompletion:         complete,
+		TextDocumentSemanticTokensFull: highlight,
 	}
 
-	server := server.NewServer(&handler, lsName, false)
+	myServer = server.NewServer(&handler, lsName, false)
 
-	server.RunStdio()
+	myServer.RunStdio()
 
 	// parser := sitter.NewParser()
 	// parser.SetLanguage(monkeylang.GetLanguage())
@@ -47,6 +51,13 @@ func main() {
 
 func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
 	capabilities := handler.CreateServerCapabilities()
+	AddTokenLegend(&capabilities)
+
+	jsonBytes, err := json.Marshal(capabilities)
+	if err != nil {
+		myServer.Log.Error("error reading capas")
+	}
+	myServer.Log.Info(fmt.Sprintf("Capas: %+v", string(jsonBytes)))
 
 	return protocol.InitializeResult{
 		Capabilities: capabilities,
@@ -72,6 +83,40 @@ func setTrace(context *glsp.Context, params *protocol.SetTraceParams) error {
 }
 
 func didChange(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
-	commonlog.NewInfoMessage(0, fmt.Sprintf("got smth: %d", params.TextDocument.Version)).Send()
+	myServer.Log.Info(fmt.Sprintf("got smth: %d", params.TextDocument.Version))
 	return nil
+}
+
+func complete(context *glsp.Context, params *protocol.CompletionParams) (any, error) {
+	return protocol.CompletionList{
+		IsIncomplete: false,
+		Items: []protocol.CompletionItem{
+			{
+				Label: "Monkeylang",
+			},
+			{
+				Label: "LSP",
+			},
+			{
+				Label: "Lua",
+			},
+		},
+	}, nil
+}
+
+func highlight(context *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
+
+	myServer.Log.Info(fmt.Sprintf("got token request for: %s", params.TextDocument.URI))
+	return &protocol.SemanticTokens{
+		Data: []uint32{},
+	}, nil
+}
+
+func AddTokenLegend(h *protocol.ServerCapabilities) {
+	h.SemanticTokensProvider.(*protocol.SemanticTokensOptions).Legend = protocol.SemanticTokensLegend{
+		TokenTypes: []string{
+			string(protocol.SemanticTokenTypeVariable),
+		},
+	}
+
 }

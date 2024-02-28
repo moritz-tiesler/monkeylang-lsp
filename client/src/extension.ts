@@ -38,12 +38,13 @@ export function activate(context: ExtensionContext) {
       // Notify the server about file changes to '.clientrc files contained in the workspace
       fileEvents: workspace.createFileSystemWatcher("**/.clientrc"),
     },
+     
   };
 
   // Create the language client and start the client.
   client = new LanguageClient(
-    "REPLACE_ME language-server-id",
-    "REPLACE_ME language server name",
+    "monkeyLanglsp",
+    "Monkeylang LSP",
     serverOptions,
     clientOptions
   );
