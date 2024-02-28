@@ -2,6 +2,7 @@ import * as path from "path";
 import { workspace, ExtensionContext } from "vscode";
 
 import {
+  Executable,
   LanguageClient,
   LanguageClientOptions,
   ServerOptions,
@@ -13,17 +14,20 @@ let client: LanguageClient;
 export function activate(context: ExtensionContext) {
   // The server is implemented in node
   const serverModule = context.asAbsolutePath(
-    path.join("server", "out", "server.js")
+    path.join("server", "monkeylang-server")
   );
 
   // If the extension is launched in debug mode then the debug server options are used
   // Otherwise the run options are used
+  const exec: Executable = {command: serverModule, transport: TransportKind.stdio}
   const serverOptions: ServerOptions = {
-    run: { module: serverModule, transport: TransportKind.ipc },
-    debug: {
-      module: serverModule,
-      transport: TransportKind.ipc,
-    },
+    //run: { module: serverModule, transport: TransportKind.stdio },
+    run: exec,
+    // debug: {
+      // module: serverModule,
+      // transport: TransportKind.stdio,
+    // },
+    debug: exec
   };
 
   // Options to control the language client
