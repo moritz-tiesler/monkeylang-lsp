@@ -10,11 +10,21 @@
     "vscode": "^1.75.0"
   },
   "activationEvents": [
-    "onLanguage"
+    "onLanguage:monkey"
   ],
   "main": "./client/out/extension",
   "contributes": {
+    "languages": [
+      {
+        "id": "monkey",
+        "extensions": [
+          ".mky"
+        ],
+        "aliases": ["Monkey", "Monkeylang"]
+      }
+    ],
     "configuration": {
+      
       "type": "object",
 			"title": "Example configuration",
 			"properties": {
@@ -35,8 +45,14 @@
 					"default": "verbose",
 					"description": "Traces the communication between VS Code and the language server."
 				}
+      
+      }
+    },
+    "configurationDefaults": {
+      "[monkey]": {
+        "editor.semanticHighlighting.enabled": true
+      }
     }
-  }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

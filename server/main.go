@@ -26,13 +26,15 @@ func main() {
 	commonlog.Configure(1, &path)
 
 	handler = protocol.Handler{
-		Initialize:                     initialize,
-		Initialized:                    initialized,
-		Shutdown:                       shutdown,
-		SetTrace:                       setTrace,
-		TextDocumentDidChange:          didChange,
-		TextDocumentCompletion:         complete,
-		TextDocumentSemanticTokensFull: highlight,
+		Initialize:            initialize,
+		Initialized:           initialized,
+		Shutdown:              shutdown,
+		SetTrace:              setTrace,
+		TextDocumentDidChange: didChange,
+		//TextDocumentCompletion:              complete,
+		TextDocumentSemanticTokensFull:      highlight,
+		TextDocumentSemanticTokensRange:     highlightRange,
+		TextDocumentSemanticTokensFullDelta: highLightRangeDelta,
 	}
 
 	myServer = server.NewServer(&handler, lsName, false)
@@ -116,7 +118,51 @@ func AddTokenLegend(h *protocol.ServerCapabilities) {
 	h.SemanticTokensProvider.(*protocol.SemanticTokensOptions).Legend = protocol.SemanticTokensLegend{
 		TokenTypes: []string{
 			string(protocol.SemanticTokenTypeVariable),
+			string(protocol.SemanticTokenTypeNamespace),
+			string(protocol.SemanticTokenTypeType),
+			string(protocol.SemanticTokenTypeClass),
+			string(protocol.SemanticTokenTypeEnum),
+			string(protocol.SemanticTokenTypeInterface),
+			string(protocol.SemanticTokenTypeStruct),
+			string(protocol.SemanticTokenTypeTypeParameter),
+			string(protocol.SemanticTokenTypeParameter),
+			string(protocol.SemanticTokenTypeVariable),
+			string(protocol.SemanticTokenTypeProperty),
+			string(protocol.SemanticTokenTypeEnumMember),
+			string(protocol.SemanticTokenTypeEvent),
+			string(protocol.SemanticTokenTypeFunction),
+			string(protocol.SemanticTokenTypeMethod),
+			string(protocol.SemanticTokenTypeMacro),
+			string(protocol.SemanticTokenTypeKeyword),
+			string(protocol.SemanticTokenTypeModifier),
+			string(protocol.SemanticTokenTypeComment),
+			string(protocol.SemanticTokenTypeString),
+			string(protocol.SemanticTokenTypeNumber),
+			string(protocol.SemanticTokenTypeRegexp),
+			string(protocol.SemanticTokenTypeOperator),
+		},
+		TokenModifiers: []string{
+			string(protocol.SemanticTokenModifierDeclaration),
+			string(protocol.SemanticTokenModifierDefinition),
+			string(protocol.SemanticTokenModifierReadonly),
+			string(protocol.SemanticTokenModifierStatic),
+			string(protocol.SemanticTokenModifierDeprecated),
+			string(protocol.SemanticTokenModifierAbstract),
+			string(protocol.SemanticTokenModifierAsync),
+			string(protocol.SemanticTokenModifierModification),
+			string(protocol.SemanticTokenModifierDocumentation),
+			string(protocol.SemanticTokenModifierDefaultLibrary),
 		},
 	}
+}
 
+func highlightRange(context *glsp.Context, params *protocol.SemanticTokensRangeParams) (any, error) {
+
+	myServer.Log.Info(fmt.Sprintf("got token request for: %s", params.TextDocument.URI))
+	return nil, nil
+}
+
+func highLightRangeDelta(context *glsp.Context, params *protocol.SemanticTokensDeltaParams) (any, error) {
+	myServer.Log.Info(fmt.Sprintf("got token request for: %s", params.TextDocument.URI))
+	return nil, nil
 }
