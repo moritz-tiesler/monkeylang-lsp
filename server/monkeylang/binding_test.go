@@ -17,4 +17,14 @@ func TestGrammar(t *testing.T) {
 		t.Errorf("grammar error. want=%s, got=%s", expected, n.String())
 	}
 
+	p := sitter.NewParser()
+	p.SetLanguage(GetLanguage())
+	node, err := p.ParseCtx(context.Background(), nil, []byte("let a = 2"))
+	if err != nil {
+		t.Errorf("parsing error")
+	}
+	if n.String() != expected {
+		t.Errorf("grammar error. want=%s, got=%s", expected, node.RootNode().String())
+	}
+
 }

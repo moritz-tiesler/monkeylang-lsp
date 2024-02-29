@@ -49,6 +49,7 @@ func main() {
 func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
 	capabilities := handler.CreateServerCapabilities()
 	SetTextDocumentSyncKind(&capabilities, protocol.TextDocumentSyncKindFull)
+	AddTokenLegend(&capabilities)
 
 	jsonBytes, err := json.Marshal(capabilities)
 	if err != nil {
@@ -96,9 +97,10 @@ func didChange(context *glsp.Context, params *protocol.DidChangeTextDocumentPara
 	}
 
 	myServer.Log.Info(fmt.Sprintf("got Change: %+v", params.ContentChanges...))
-	doc.ApplyContentChanges(changes)
+	doc.ApplyContentChanges(changes.Text)
 
 	myServer.Log.Info(fmt.Sprintf("new content=%s", doc.Content))
+	myServer.Log.Info(fmt.Sprintf("new content=%s", doc.Tree.RootNode()))
 
 	return nil
 }
@@ -121,10 +123,25 @@ func complete(context *glsp.Context, params *protocol.CompletionParams) (any, er
 }
 
 func highlight(context *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
+	hls, _ := doc.GetHighLights()
+
+	data := []uint32{}
+	for _, hl := range hls {
+		data = append(data, uint32(hl.Line))
+		data = append(data, uint32(hl.StartChar))
+		data = append(data, uint32(hl.Length))
+		if hl.TokenType == "identifier" {
+			data = append(data, 8)
+		}
+		if hl.TokenType == "boolean" {
+			data = append(data, 15)
+		}
+		data = append(data, 0)
+	}
 
 	myServer.Log.Info(fmt.Sprintf("got token request for: %s", params.TextDocument.URI))
 	return &protocol.SemanticTokens{
-		Data: []uint32{},
+		Data: data,
 	}, nil
 }
 
