@@ -12,6 +12,8 @@ import (
 	// Must include a backend implementation
 	// See CommonLog for other options: https://github.com/tliron/commonlog
 
+	"monkeylang-server/document"
+
 	_ "github.com/tliron/commonlog/simple"
 )
 
@@ -20,6 +22,7 @@ const lsName = "Monkeylang"
 var version string = "0.0.1"
 var handler protocol.Handler
 var myServer *server.Server
+var doc *document.Document = document.New("")
 
 func main() {
 	path := "/tmp/lsp.log"
@@ -32,28 +35,20 @@ func main() {
 		SetTrace:              setTrace,
 		TextDocumentDidChange: didChange,
 		//TextDocumentCompletion:              complete,
-		TextDocumentSemanticTokensFull:      highlight,
-		TextDocumentSemanticTokensRange:     highlightRange,
-		TextDocumentSemanticTokensFullDelta: highLightRangeDelta,
+		TextDocumentSemanticTokensFull: highlight,
+		// TextDocumentSemanticTokensRange:     highlightRange,
+		// TextDocumentSemanticTokensFullDelta: highLightRangeDelta,
 	}
 
 	myServer = server.NewServer(&handler, lsName, false)
 
 	myServer.RunStdio()
 
-	// parser := sitter.NewParser()
-	// parser.SetLanguage(monkeylang.GetLanguage())
-
-	// sourceCode := "let a = 2"
-	// tree, _ := parser.ParseCtx(context.Background(), nil, []byte(sourceCode))
-
-	// n := tree.RootNode()
-	// fmt.Println(n)
 }
 
 func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
 	capabilities := handler.CreateServerCapabilities()
-	AddTokenLegend(&capabilities)
+	SetTextDocumentSyncKind(&capabilities, protocol.TextDocumentSyncKindFull)
 
 	jsonBytes, err := json.Marshal(capabilities)
 	if err != nil {
@@ -85,7 +80,24 @@ func setTrace(context *glsp.Context, params *protocol.SetTraceParams) error {
 }
 
 func didChange(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
-	myServer.Log.Info(fmt.Sprintf("got smth: %d", params.TextDocument.Version))
+	uri := params.TextDocument.URI
+	if doc.Uri == "" {
+		doc.Uri = uri
+	}
+	myServer.Log.Info(fmt.Sprintf("got didChange: %s", uri))
+
+	if doc.Uri != uri {
+		return fmt.Errorf(fmt.Sprintf("client changed uri=%s, internally store uri=%s", uri, doc.Uri))
+	}
+
+	changes, ok := params.ContentChanges[0].(protocol.TextDocumentContentChangeEventWhole)
+	if !ok {
+		panic(fmt.Sprintf("could not decode contentChanges=%v", params.ContentChanges...))
+	}
+
+	myServer.Log.Info(fmt.Sprintf("got Change: %+v", params.ContentChanges...))
+	doc.ApplyContentChanges(changes)
+
 	return nil
 }
 
@@ -112,6 +124,27 @@ func highlight(context *glsp.Context, params *protocol.SemanticTokensParams) (*p
 	return &protocol.SemanticTokens{
 		Data: []uint32{},
 	}, nil
+}
+
+func SetTextDocumentSyncKind(capa *protocol.ServerCapabilities, kind protocol.TextDocumentSyncKind) error {
+	options, ok := capa.TextDocumentSync.(*protocol.TextDocumentSyncOptions)
+	if !ok {
+		return fmt.Errorf("could not set TextDocumentSyncKind")
+	}
+	options.Change = &kind
+
+	return nil
+}
+
+func highlightRange(context *glsp.Context, params *protocol.SemanticTokensRangeParams) (any, error) {
+
+	myServer.Log.Info(fmt.Sprintf("got token request for: %s", params.TextDocument.URI))
+	return nil, nil
+}
+
+func highLightRangeDelta(context *glsp.Context, params *protocol.SemanticTokensDeltaParams) (any, error) {
+	myServer.Log.Info(fmt.Sprintf("got token request for: %s", params.TextDocument.URI))
+	return nil, nil
 }
 
 func AddTokenLegend(h *protocol.ServerCapabilities) {
@@ -154,15 +187,4 @@ func AddTokenLegend(h *protocol.ServerCapabilities) {
 			string(protocol.SemanticTokenModifierDefaultLibrary),
 		},
 	}
-}
-
-func highlightRange(context *glsp.Context, params *protocol.SemanticTokensRangeParams) (any, error) {
-
-	myServer.Log.Info(fmt.Sprintf("got token request for: %s", params.TextDocument.URI))
-	return nil, nil
-}
-
-func highLightRangeDelta(context *glsp.Context, params *protocol.SemanticTokensDeltaParams) (any, error) {
-	myServer.Log.Info(fmt.Sprintf("got token request for: %s", params.TextDocument.URI))
-	return nil, nil
 }
