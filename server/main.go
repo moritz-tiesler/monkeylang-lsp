@@ -98,6 +98,8 @@ func didChange(context *glsp.Context, params *protocol.DidChangeTextDocumentPara
 	myServer.Log.Info(fmt.Sprintf("got Change: %+v", params.ContentChanges...))
 	doc.ApplyContentChanges(changes)
 
+	myServer.Log.Info(fmt.Sprintf("new content=%s", doc.Content))
+
 	return nil
 }
 
