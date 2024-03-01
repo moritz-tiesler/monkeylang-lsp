@@ -27,7 +27,22 @@ func TestHighLights(t *testing.T) {
 	if err != nil {
 		t.Errorf("error getting highlights for %s", doc.Tree.RootNode().String())
 	}
-	if len(highlights) < 1 {
-		t.Errorf("expected at least one node from %s", doc.Tree.RootNode().String())
+	if len(highlights) != 4 {
+		t.Errorf("expected four nodes from %s", doc.Content)
+	}
+}
+
+func TestQueryTokens(t *testing.T) {
+	doc := New("let myVal = 1;let myVal = anotherVal")
+	tokens, err := doc.queryTokens()
+
+	for _, t := range tokens {
+		fmt.Println(t.Content(doc.byteContent))
+	}
+	if err != nil {
+		t.Errorf("error getting tokens from=%s", doc.Content)
+	}
+	if len(tokens) != 4 {
+		t.Errorf("expected 4 tokens, got=%d", len(tokens))
 	}
 }

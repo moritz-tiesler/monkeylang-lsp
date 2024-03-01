@@ -136,6 +136,9 @@ func highlight(context *glsp.Context, params *protocol.SemanticTokensParams) (*p
 		if hl.TokenType == "boolean" {
 			data = append(data, 15)
 		}
+		if hl.TokenType == "number" {
+			data = append(data, 19)
+		}
 		data = append(data, 0)
 	}
 
