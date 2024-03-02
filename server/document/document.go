@@ -96,7 +96,8 @@ func (d *Document) queryTokens() ([]*sitter.Node, error) {
 
 	tokens := []*sitter.Node{}
 	qs := `
-			((identifier) @variable
+			(
+				(identifier) @variable
 			[
 				(number) @number 
 				(identifier) @variable
