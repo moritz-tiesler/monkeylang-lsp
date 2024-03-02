@@ -7,7 +7,7 @@ import (
 
 func TestApplyChanges(t *testing.T) {
 	doc := New("")
-	sourceCode := "let a = 2"
+	sourceCode := "let a = 2;"
 
 	err := doc.ApplyContentChanges(sourceCode)
 	if err != nil {
@@ -27,8 +27,8 @@ func TestHighLights(t *testing.T) {
 	if err != nil {
 		t.Errorf("error getting highlights for %s", doc.Tree.RootNode().String())
 	}
-	if len(highlights) != 4 {
-		t.Errorf("expected four nodes from %s", doc.Content)
+	if len(highlights) != 6 {
+		t.Errorf("expected six four nodes from %s", doc.Content)
 	}
 }
 
@@ -42,7 +42,7 @@ func TestQueryTokens(t *testing.T) {
 	if err != nil {
 		t.Errorf("error getting tokens from=%s", doc.Content)
 	}
-	if len(tokens) != 4 {
-		t.Errorf("expected 4 tokens, got=%d", len(tokens))
+	if len(tokens) != 6 {
+		t.Errorf("expected 6 tokens, got=%d", len(tokens))
 	}
 }

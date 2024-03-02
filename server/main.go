@@ -128,6 +128,7 @@ func TokenTypeToIndex(tokenType string) (int, error) {
 	lookUp["identifier"] = 8
 	lookUp["number"] = 19
 	lookUp["boolean"] = 15
+	lookUp["let"] = 15
 
 	index, ok := lookUp[tokenType]
 	myServer.Log.Info(fmt.Sprintf("sending lsp tokentype=%d for monkeytoken=%s", index, tokenType))

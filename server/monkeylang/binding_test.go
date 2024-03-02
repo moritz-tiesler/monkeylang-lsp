@@ -8,7 +8,7 @@ import (
 )
 
 func TestGrammar(t *testing.T) {
-	n, err := sitter.ParseCtx(context.Background(), []byte("let a = 2"), GetLanguage())
+	n, err := sitter.ParseCtx(context.Background(), []byte("let a = 2;"), GetLanguage())
 	if err != nil {
 		t.Errorf("parsing error")
 	}
