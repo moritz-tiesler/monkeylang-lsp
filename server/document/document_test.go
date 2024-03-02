@@ -13,7 +13,7 @@ func TestApplyChanges(t *testing.T) {
 	if err != nil {
 		t.Errorf("could not apply changes=%s", sourceCode)
 	}
-	expected := "(source_file (value_assignment (value_name) (number)))"
+	expected := "(source_file (value_assignment (declaration_name) (number)))"
 	treeString := doc.Tree.RootNode().String()
 	if treeString != expected {
 		t.Errorf("grammar error. want=%s, got=%s", expected, treeString)
@@ -46,8 +46,8 @@ func TestFuncHighlights(t *testing.T) {
 		t.Errorf("error getting highlights for %s", doc.Tree.RootNode().String())
 	}
 
-	if len(highlights) != 3 {
-		t.Errorf("expected 3 highlights from %s, got=%d", doc.Content, len(highlights))
+	if len(highlights) != 5 {
+		t.Errorf("expected 5 highlights from %s, got=%d", doc.Content, len(highlights))
 	}
 }
 
@@ -61,7 +61,48 @@ func TestQueryTokens(t *testing.T) {
 	if err != nil {
 		t.Errorf("error getting tokens from=%s", doc.Content)
 	}
-	if len(tokens) != 6 {
-		t.Errorf("expected 6 tokens, got=%d", len(tokens))
+	if len(tokens) != 5 {
+		t.Errorf("expected 5 tokens, got=%d", len(tokens))
+	}
+}
+
+func TestQueryFuncTokens(t *testing.T) {
+	doc := New(
+		`let double = fn(a) {a * 2;};
+		let double = fn(a) {a * 2;};
+		double(2);`)
+	tokens, err := doc.queryTokens()
+
+	if err != nil {
+		t.Errorf("error getting tokens from=%s", doc.Content)
+	}
+
+	expected_types := []string{
+		"let",
+		"function_name",
+		"fn",
+		"parameter",
+		"number",
+		"let",
+		"function_name",
+		"fn",
+		"parameter",
+		"number",
+		"function_name",
+		"number",
+	}
+
+	if len(tokens) != len(expected_types) {
+		t.Errorf("expected %d tokens, got=%d", len(expected_types), len(tokens))
+	}
+
+	for i, tok := range tokens {
+		if tok.Type() != expected_types[i] {
+			t.Errorf("token type error. want=%s, got=%s", expected_types[i], tok.Type())
+		}
+	}
+
+	for _, t := range tokens {
+		fmt.Println(t.Content(doc.byteContent))
 	}
 }

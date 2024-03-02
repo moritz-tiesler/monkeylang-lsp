@@ -12,14 +12,14 @@ func TestGrammar(t *testing.T) {
 	if err != nil {
 		t.Errorf("parsing error")
 	}
-	expected := "(source_file (value_assignment (value_name) (number)))"
+	expected := "(source_file (value_assignment (declaration_name) (number)))"
 	if n.String() != expected {
 		t.Errorf("grammar error. want=%s, got=%s", expected, n.String())
 	}
 
 	p := sitter.NewParser()
 	p.SetLanguage(GetLanguage())
-	node, err := p.ParseCtx(context.Background(), nil, []byte("let a = 2"))
+	node, err := p.ParseCtx(context.Background(), nil, []byte("let a = 2;"))
 	if err != nil {
 		t.Errorf("parsing error")
 	}
