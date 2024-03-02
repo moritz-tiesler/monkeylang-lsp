@@ -13,22 +13,41 @@ func TestApplyChanges(t *testing.T) {
 	if err != nil {
 		t.Errorf("could not apply changes=%s", sourceCode)
 	}
-	expected := "(source_file (let_statement (identifier) (number)))"
+	expected := "(source_file (value_assignment (value_name) (number)))"
 	treeString := doc.Tree.RootNode().String()
 	if treeString != expected {
 		t.Errorf("grammar error. want=%s, got=%s", expected, treeString)
 	}
 }
 
-func TestHighLights(t *testing.T) {
+func TestValHighLights(t *testing.T) {
 	doc := New("let myVal = true\nlet another = false")
+
 	highlights, err := doc.GetHighLights()
 	fmt.Println(highlights)
+
 	if err != nil {
 		t.Errorf("error getting highlights for %s", doc.Tree.RootNode().String())
 	}
+
 	if len(highlights) != 6 {
 		t.Errorf("expected six four nodes from %s", doc.Content)
+	}
+}
+
+func TestFuncHighlights(t *testing.T) {
+	doc := New("let double = fn(a) {a*2;};")
+
+	highlights, err := doc.GetHighLights()
+	fmt.Println(doc.Tree.RootNode().String())
+	fmt.Println(highlights)
+
+	if err != nil {
+		t.Errorf("error getting highlights for %s", doc.Tree.RootNode().String())
+	}
+
+	if len(highlights) != 3 {
+		t.Errorf("expected 3 highlights from %s, got=%d", doc.Content, len(highlights))
 	}
 }
 

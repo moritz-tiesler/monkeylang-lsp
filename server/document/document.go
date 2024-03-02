@@ -96,14 +96,13 @@ func (d *Document) queryTokens() ([]*sitter.Node, error) {
 
 	tokens := []*sitter.Node{}
 	qs := `
-			(
 				"let" @keyword
-				(identifier) @variable
-			[
+				(value_name) @variable
 				(number) @number 
-				(identifier) @variable
 				(boolean) @bool
-			])
+				(function_name) @func_name
+				"fn" @keyword
+				(parameter) @parameter
 	`
 
 	q, err := sitter.NewQuery([]byte(qs), monkeylang.GetLanguage())

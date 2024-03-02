@@ -125,10 +125,13 @@ func complete(context *glsp.Context, params *protocol.CompletionParams) (any, er
 func TokenTypeToIndex(tokenType string) (int, error) {
 	lookUp := make(map[string]int)
 
-	lookUp["identifier"] = 8
+	lookUp["value_name"] = 9
 	lookUp["number"] = 19
 	lookUp["boolean"] = 15
 	lookUp["let"] = 15
+	lookUp["fn"] = 15
+	lookUp["function_name"] = 12
+	lookUp["parameter"] = 7
 
 	index, ok := lookUp[tokenType]
 	myServer.Log.Info(fmt.Sprintf("sending lsp tokentype=%d for monkeytoken=%s", index, tokenType))
@@ -136,6 +139,20 @@ func TokenTypeToIndex(tokenType string) (int, error) {
 		return -1, fmt.Errorf("could not find index for tokenType=%s", tokenType)
 	}
 	return index, nil
+}
+
+func TokenTypeToModifier(tokenType string) (int, bool) {
+	lookUp := make(map[string]int)
+
+	lookUp["function_name"] = 4
+	lookUp["value_name"] = 2
+
+	index, ok := lookUp[tokenType]
+	myServer.Log.Info(fmt.Sprintf("sending lsp tokenmodifier=%d for monkeytoken=%s", index, tokenType))
+	if !ok {
+		return -1, false
+	}
+	return index, true
 }
 
 func highlight(context *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
@@ -149,11 +166,14 @@ func highlight(context *glsp.Context, params *protocol.SemanticTokensParams) (*p
 
 		tokenIndex, err := TokenTypeToIndex(hl.TokenType)
 		if err != nil {
-			return nil, fmt.Errorf("error in token lookup")
+			return nil, fmt.Errorf("error in token lookup for tokenType=%s", hl.TokenType)
 		}
 
 		data = append(data, uint32(tokenIndex))
-		tokenModifier := 0
+		tokenModifier, ok := TokenTypeToModifier(hl.TokenType)
+		if !ok {
+			tokenModifier = 0
+		}
 		data = append(data, uint32(tokenModifier))
 	}
 

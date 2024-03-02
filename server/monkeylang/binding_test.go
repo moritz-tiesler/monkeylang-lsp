@@ -12,7 +12,7 @@ func TestGrammar(t *testing.T) {
 	if err != nil {
 		t.Errorf("parsing error")
 	}
-	expected := "(source_file (let_statement (identifier) (number)))"
+	expected := "(source_file (value_assignment (value_name) (number)))"
 	if n.String() != expected {
 		t.Errorf("grammar error. want=%s, got=%s", expected, n.String())
 	}
