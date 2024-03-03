@@ -1,4 +1,4 @@
-package monkeylang
+package document
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ func TestValHighLights(t *testing.T) {
 	doc := New("let myVal = true\nlet another = false")
 
 	highlights, err := doc.GetHighLights()
-	// fmt.Println(highlights)
+	fmt.Println(highlights)
 
 	if err != nil {
 		t.Errorf("error getting highlights for %s", doc.Tree.RootNode().String())
@@ -39,8 +39,8 @@ func TestFuncHighlights(t *testing.T) {
 	doc := New("let double = fn(a) {a*2;};")
 
 	highlights, err := doc.GetHighLights()
-	//fmt.Println(doc.Tree.RootNode().String())
-	//fmt.Println(highlights)
+	fmt.Println(doc.Tree.RootNode().String())
+	fmt.Println(highlights)
 
 	if err != nil {
 		t.Errorf("error getting highlights for %s", doc.Tree.RootNode().String())
@@ -55,9 +55,9 @@ func TestQueryTokens(t *testing.T) {
 	doc := New("let myVal = 1;let myVal = anotherVal")
 	tokens, err := doc.queryTokens()
 
-	//for _, t := range tokens {
-	//fmt.Println(t.Content(doc.byteContent))
-	//}
+	for _, t := range tokens {
+		fmt.Println(t.Content(doc.byteContent))
+	}
 	if err != nil {
 		t.Errorf("error getting tokens from=%s", doc.Content)
 	}
@@ -67,10 +67,10 @@ func TestQueryTokens(t *testing.T) {
 }
 
 func TestQueryFuncTokens(t *testing.T) {
-	doc := New("let func = fn(a) {a;};let func = fn(a) {a;};double(2);")
-
-	fmt.Printf("from parser: \n%s\n", doc.Tree.RootNode().String())
-	fmt.Printf("from root node: \n%s\n", doc.Root.String())
+	doc := New(
+		`let double = fn(a) {a * 2;};
+		let double = fn(a) {a * 2;};
+		double(2);`)
 	tokens, err := doc.queryTokens()
 
 	if err != nil {
@@ -102,7 +102,7 @@ func TestQueryFuncTokens(t *testing.T) {
 		}
 	}
 
-	//for _, t := range tokens {
-	//	fmt.Println(t.Content(doc.byteContent))
-	//}
+	for _, t := range tokens {
+		fmt.Println(t.Content(doc.byteContent))
+	}
 }
