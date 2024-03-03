@@ -12,7 +12,7 @@ import (
 	// Must include a backend implementation
 	// See CommonLog for other options: https://github.com/tliron/commonlog
 
-	"monkeylang-server/document"
+	"monkeylang-server/monkeylang"
 
 	_ "github.com/tliron/commonlog/simple"
 )
@@ -22,7 +22,7 @@ const lsName = "Monkeylang"
 var version string = "0.0.1"
 var handler protocol.Handler
 var myServer *server.Server
-var doc *document.Document = document.New("")
+var doc *monkeylang.Document = monkeylang.New("")
 
 func main() {
 	path := "/tmp/lsp.log"
