@@ -1,19 +1,18 @@
 package document
 
 import (
-	"fmt"
 	"testing"
 )
 
 func TestApplyChanges(t *testing.T) {
 	doc := New("")
-	sourceCode := "let a = 2;"
+	sourceCode := "let a = 2"
 
 	err := doc.ApplyContentChanges(sourceCode)
 	if err != nil {
 		t.Errorf("could not apply changes=%s", sourceCode)
 	}
-	expected := "(source_file (value_assignment (declaration_name) (number)))"
+	expected := "(source_file (let_statement left: (identifier) right: (number)))"
 	treeString := doc.Tree.RootNode().String()
 	if treeString != expected {
 		t.Errorf("grammar error. want=%s, got=%s", expected, treeString)
@@ -24,7 +23,7 @@ func TestValHighLights(t *testing.T) {
 	doc := New("let myVal = true\nlet another = false")
 
 	highlights, err := doc.GetHighLights()
-	fmt.Println(highlights)
+	//fmt.Println(highlights)
 
 	if err != nil {
 		t.Errorf("error getting highlights for %s", doc.Tree.RootNode().String())
@@ -39,8 +38,8 @@ func TestFuncHighlights(t *testing.T) {
 	doc := New("let double = fn(a) {a*2;};")
 
 	highlights, err := doc.GetHighLights()
-	fmt.Println(doc.Tree.RootNode().String())
-	fmt.Println(highlights)
+	//fmt.Println(doc.Tree.RootNode().String())
+	//fmt.Println(highlights)
 
 	if err != nil {
 		t.Errorf("error getting highlights for %s", doc.Tree.RootNode().String())
@@ -55,9 +54,9 @@ func TestQueryTokens(t *testing.T) {
 	doc := New("let myVal = 1;let myVal = anotherVal")
 	tokens, err := doc.queryTokens()
 
-	for _, t := range tokens {
-		fmt.Println(t.Content(doc.byteContent))
-	}
+	//for _, t := range tokens {
+	//fmt.Println(t.Content(doc.byteContent))
+	//}
 	if err != nil {
 		t.Errorf("error getting tokens from=%s", doc.Content)
 	}
@@ -68,9 +67,9 @@ func TestQueryTokens(t *testing.T) {
 
 func TestQueryFuncTokens(t *testing.T) {
 	doc := New(
-		`let double = fn(a) {a * 2;};
-		let double = fn(a) {a * 2;};
-		double(2);`)
+		`let double = fn(a) {a * 2;}
+		let double = fn(a) {a * 2;}
+		double(2)`)
 	tokens, err := doc.queryTokens()
 
 	if err != nil {
@@ -79,16 +78,16 @@ func TestQueryFuncTokens(t *testing.T) {
 
 	expected_types := []string{
 		"let",
-		"function_name",
+		"identifier",
 		"fn",
 		"parameter",
 		"number",
 		"let",
-		"function_name",
+		"identifier",
 		"fn",
 		"parameter",
 		"number",
-		"function_name",
+		"identifier",
 		"number",
 	}
 
@@ -102,7 +101,7 @@ func TestQueryFuncTokens(t *testing.T) {
 		}
 	}
 
-	for _, t := range tokens {
-		fmt.Println(t.Content(doc.byteContent))
-	}
+	//for _, t := range tokens {
+	//fmt.Println(t.Content(doc.byteContent))
+	//}
 }

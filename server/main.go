@@ -125,12 +125,11 @@ func complete(context *glsp.Context, params *protocol.CompletionParams) (any, er
 func TokenTypeToIndex(tokenType string) (int, error) {
 	lookUp := make(map[string]int)
 
-	lookUp["declaration_name"] = 9
+	lookUp["identifier"] = 9
 	lookUp["number"] = 19
 	lookUp["boolean"] = 15
 	lookUp["let"] = 15
 	lookUp["fn"] = 15
-	lookUp["function_name"] = 12
 	lookUp["parameter"] = 7
 
 	index, ok := lookUp[tokenType]
@@ -156,6 +155,7 @@ func TokenTypeToModifier(tokenType string) (int, bool) {
 }
 
 func highlight(context *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
+	myServer.Log.Info(fmt.Sprintf("got token request for: %s", params.TextDocument.URI))
 	hls, _ := doc.GetHighLights()
 
 	data := []uint32{}
@@ -177,7 +177,6 @@ func highlight(context *glsp.Context, params *protocol.SemanticTokensParams) (*p
 		data = append(data, uint32(tokenModifier))
 	}
 
-	myServer.Log.Info(fmt.Sprintf("got token request for: %s", params.TextDocument.URI))
 	return &protocol.SemanticTokens{
 		Data: data,
 	}, nil

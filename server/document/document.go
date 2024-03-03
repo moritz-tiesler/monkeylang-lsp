@@ -63,6 +63,7 @@ func (d *Document) GetHighLights() ([]HighLight, error) {
 	prevLine := 0
 
 	for _, tok := range tokens {
+		//fmt.Println(tok.Content(d.byteContent))
 
 		t := tok.Type()
 
@@ -97,12 +98,18 @@ func (d *Document) queryTokens() ([]*sitter.Node, error) {
 	tokens := []*sitter.Node{}
 	qs := `
 				"let" @keyword
-				(declaration_name) @variable
+				(let_statement
+					left: (identifier) @var_name
+					"=" @equals
+					right: _ @rest) @let_statement
 				(number) @number 
 				(boolean) @bool
-				(function_name) @func_name
 				"fn" @keyword
 				(parameter) @parameter
+				(function_call
+					(identifier) @func_name
+					_ @rest) @function_call
+
 	`
 
 	q, err := sitter.NewQuery([]byte(qs), monkeylang.GetLanguage())
@@ -119,6 +126,20 @@ func (d *Document) queryTokens() ([]*sitter.Node, error) {
 		}
 		//m = qc.FilterPredicates(m, []byte(d.Content))
 		for _, c := range m.Captures {
+			//fmt.Println(c.Node.Type())
+			//fmt.Println(c.Node.StartPoint())
+			if c.Node.Type() == "let_statement" {
+				tokens = append(tokens, c.Node.ChildByFieldName("left"))
+				break
+			}
+			//if c.Node.Type() == "identifier" {
+			//tokens = append(tokens, c.Node)
+			//break
+			//}
+			if c.Node.Type() == "function_call" {
+				tokens = append(tokens, c.Node.Child(0))
+				break
+			}
 			tokens = append(tokens, c.Node)
 		}
 	}
