@@ -50,6 +50,22 @@ func TestFuncHighlights(t *testing.T) {
 	}
 }
 
+func TestStringHighlights(t *testing.T) {
+	doc := New(`let myStr = "abc"`)
+
+	highlights, err := doc.GetHighLights()
+	//fmt.Println(doc.Tree.RootNode().String())
+	//fmt.Println(highlights)
+
+	if err != nil {
+		t.Errorf("error getting highlights for %s", doc.Tree.RootNode().String())
+	}
+
+	if len(highlights) != 3 {
+		t.Errorf("expected 3 highlights from %s, got=%d", doc.Content, len(highlights))
+	}
+}
+
 func TestQueryTokens(t *testing.T) {
 	doc := New("let myVal = 1;let myVal = anotherVal")
 	tokens, err := doc.queryTokens()
@@ -89,6 +105,36 @@ func TestQueryFuncTokens(t *testing.T) {
 		"number",
 		"identifier",
 		"number",
+	}
+
+	if len(tokens) != len(expected_types) {
+		t.Errorf("expected %d tokens, got=%d", len(expected_types), len(tokens))
+	}
+
+	for i, tok := range tokens {
+		if tok.Type() != expected_types[i] {
+			t.Errorf("token type error. want=%s, got=%s", expected_types[i], tok.Type())
+		}
+	}
+
+	//for _, t := range tokens {
+	//fmt.Println(t.Content(doc.byteContent))
+	//}
+}
+
+func TestQueryStringTokens(t *testing.T) {
+	doc := New(
+		`let myStr = "abc"`)
+	tokens, err := doc.queryTokens()
+
+	if err != nil {
+		t.Errorf("error getting tokens from=%s", doc.Content)
+	}
+
+	expected_types := []string{
+		"let",
+		"identifier",
+		"string_literal",
 	}
 
 	if len(tokens) != len(expected_types) {

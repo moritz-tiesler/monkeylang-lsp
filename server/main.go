@@ -125,11 +125,14 @@ func complete(context *glsp.Context, params *protocol.CompletionParams) (any, er
 func TokenTypeToIndex(tokenType string) (int, error) {
 	lookUp := make(map[string]int)
 
-	lookUp["identifier"] = 9
-	lookUp["number"] = 19
 	lookUp["boolean"] = 15
 	lookUp["let"] = 15
 	lookUp["fn"] = 15
+	lookUp["if"] = 15
+	lookUp["else"] = 15
+	lookUp["string_literal"] = 18
+	lookUp["identifier"] = 9
+	lookUp["number"] = 19
 	lookUp["parameter"] = 7
 
 	index, ok := lookUp[tokenType]

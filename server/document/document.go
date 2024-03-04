@@ -98,13 +98,16 @@ func (d *Document) queryTokens() ([]*sitter.Node, error) {
 	tokens := []*sitter.Node{}
 	qs := `
 				"let" @keyword
+				"fn" @keyword
+				"if" @keyword
+				"else" @keyword
+				(string_literal) @string_literal
 				(let_statement
 					left: (identifier) @var_name
 					"=" @equals
 					right: _ @rest) @let_statement
 				(number) @number 
 				(boolean) @bool
-				"fn" @keyword
 				(parameter) @parameter
 				(function_call
 					(identifier) @func_name
