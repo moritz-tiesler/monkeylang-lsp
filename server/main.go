@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/tliron/commonlog"
 	"github.com/tliron/glsp"
@@ -21,7 +22,12 @@ const lsName = "Monkeylang"
 
 var version string = "0.0.1"
 var handler protocol.Handler
-var myServer *server.Server
+
+type Server struct {
+	glspServer *server.Server
+}
+
+var myServer Server
 var doc *document.Document = document.New("")
 
 func main() {
@@ -40,9 +46,10 @@ func main() {
 		// TextDocumentSemanticTokensFullDelta: highLightRangeDelta,
 	}
 
-	myServer = server.NewServer(&handler, lsName, false)
-
-	myServer.RunStdio()
+	myServer = Server{
+		glspServer: server.NewServer(&handler, lsName, false),
+	}
+	myServer.glspServer.RunStdio()
 
 }
 
@@ -53,9 +60,9 @@ func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, 
 
 	jsonBytes, err := json.Marshal(capabilities)
 	if err != nil {
-		myServer.Log.Error("error reading capas")
+		myServer.glspServer.Log.Error("error reading capas")
 	}
-	myServer.Log.Info(fmt.Sprintf("Capas: %+v", string(jsonBytes)))
+	myServer.glspServer.Log.Info(fmt.Sprintf("Capas: %+v", string(jsonBytes)))
 
 	return protocol.InitializeResult{
 		Capabilities: capabilities,
@@ -85,7 +92,7 @@ func didChange(context *glsp.Context, params *protocol.DidChangeTextDocumentPara
 	if doc.Uri == "" {
 		doc.Uri = uri
 	}
-	myServer.Log.Info(fmt.Sprintf("got didChange: %s", uri))
+	myServer.glspServer.Log.Info(fmt.Sprintf("got didChange: %s", uri))
 
 	if doc.Uri != uri {
 		return fmt.Errorf(fmt.Sprintf("client changed uri=%s, internally store uri=%s", uri, doc.Uri))
@@ -96,11 +103,12 @@ func didChange(context *glsp.Context, params *protocol.DidChangeTextDocumentPara
 		panic(fmt.Sprintf("could not decode contentChanges=%v", params.ContentChanges...))
 	}
 
-	myServer.Log.Info(fmt.Sprintf("got Change: %+v", params.ContentChanges...))
+	myServer.glspServer.Log.Info(fmt.Sprintf("got Change: %+v", params.ContentChanges...))
 	doc.ApplyContentChanges(changes.Text)
+	myServer.refreshDiagnostics(doc, context.Notify, true)
 
-	myServer.Log.Info(fmt.Sprintf("new content=%s", doc.Content))
-	myServer.Log.Info(fmt.Sprintf("new content=%s", doc.Tree.RootNode()))
+	myServer.glspServer.Log.Info(fmt.Sprintf("new content=%s", doc.Content))
+	myServer.glspServer.Log.Info(fmt.Sprintf("new content=%s", doc.Tree.RootNode()))
 
 	return nil
 }
@@ -128,6 +136,7 @@ func TokenTypeToIndex(tokenType string) (int, error) {
 	lookUp["boolean"] = 15
 	lookUp["let"] = 15
 	lookUp["fn"] = 15
+	lookUp["return"] = 15
 	lookUp["if"] = 15
 	lookUp["else"] = 15
 	lookUp["string_literal"] = 18
@@ -136,7 +145,7 @@ func TokenTypeToIndex(tokenType string) (int, error) {
 	lookUp["parameter"] = 7
 
 	index, ok := lookUp[tokenType]
-	myServer.Log.Info(fmt.Sprintf("sending lsp tokentype=%d for monkeytoken=%s", index, tokenType))
+	myServer.glspServer.Log.Info(fmt.Sprintf("sending lsp tokentype=%d for monkeytoken=%s", index, tokenType))
 	if !ok {
 		return -1, fmt.Errorf("could not find index for tokenType=%s", tokenType)
 	}
@@ -150,7 +159,7 @@ func TokenTypeToModifier(tokenType string) (int, bool) {
 	lookUp["value_name"] = 2
 
 	index, ok := lookUp[tokenType]
-	myServer.Log.Info(fmt.Sprintf("sending lsp tokenmodifier=%d for monkeytoken=%s", index, tokenType))
+	myServer.glspServer.Log.Info(fmt.Sprintf("sending lsp tokenmodifier=%d for monkeytoken=%s", index, tokenType))
 	if !ok {
 		return -1, false
 	}
@@ -158,7 +167,7 @@ func TokenTypeToModifier(tokenType string) (int, bool) {
 }
 
 func highlight(context *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
-	myServer.Log.Info(fmt.Sprintf("got token request for: %s", params.TextDocument.URI))
+	myServer.glspServer.Log.Info(fmt.Sprintf("got token request for: %s", params.TextDocument.URI))
 	hls, _ := doc.GetHighLights()
 
 	data := []uint32{}
@@ -197,12 +206,12 @@ func SetTextDocumentSyncKind(capa *protocol.ServerCapabilities, kind protocol.Te
 
 func highlightRange(context *glsp.Context, params *protocol.SemanticTokensRangeParams) (any, error) {
 
-	myServer.Log.Info(fmt.Sprintf("got token request for: %s", params.TextDocument.URI))
+	myServer.glspServer.Log.Info(fmt.Sprintf("got token request for: %s", params.TextDocument.URI))
 	return nil, nil
 }
 
 func highLightRangeDelta(context *glsp.Context, params *protocol.SemanticTokensDeltaParams) (any, error) {
-	myServer.Log.Info(fmt.Sprintf("got token request for: %s", params.TextDocument.URI))
+	myServer.glspServer.Log.Info(fmt.Sprintf("got token request for: %s", params.TextDocument.URI))
 	return nil, nil
 }
 
@@ -245,4 +254,49 @@ func AddTokenLegend(h *protocol.ServerCapabilities) {
 			string(protocol.SemanticTokenModifierDefaultLibrary),
 		},
 	}
+}
+
+func (s *Server) refreshDiagnostics(doc *document.Document, notify glsp.NotifyFunc, delay bool) {
+	myServer.glspServer.Log.Info("calculation diagnostics")
+	go func() {
+
+		if delay {
+			time.Sleep(1 * time.Second)
+		}
+
+		diagnostics := []protocol.Diagnostic{}
+		for _, d := range doc.Diagnostics() {
+
+			var severity protocol.DiagnosticSeverity
+
+			switch d.Severty {
+			case document.ERROR:
+				severity = protocol.DiagnosticSeverityError
+			case document.HINT:
+				severity = protocol.DiagnosticSeverityHint
+			case document.WARNING:
+				severity = protocol.DiagnosticSeverityWarning
+			case document.INFORMATION:
+				severity = protocol.DiagnosticSeverityInformation
+			}
+
+			pDiagnostic := protocol.Diagnostic{
+				Range: protocol.Range{
+					Start: protocol.Position{Line: uint32(d.Start.Line), Character: uint32(d.Start.Char)},
+					End:   protocol.Position{Line: uint32(d.Start.Line), Character: uint32(d.Start.Char)},
+				},
+				Severity: &severity,
+			}
+
+			diagnostics = append(diagnostics, pDiagnostic)
+		}
+
+		myServer.glspServer.Log.Info("sending diagnostics")
+
+		go notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
+			URI:         doc.Uri,
+			Diagnostics: diagnostics,
+		})
+
+	}()
 }

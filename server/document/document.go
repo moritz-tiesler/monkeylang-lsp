@@ -44,9 +44,9 @@ func (d *Document) ApplyContentChanges(change string) error {
 }
 
 type HighLight struct {
-	Line           int
-	StartChar      int
-	Length         int
+	Line           uint32
+	StartChar      uint32
+	Length         uint32
 	TokenType      string
 	TokenModifiers []string
 }
@@ -59,20 +59,20 @@ func (d *Document) GetHighLights() ([]HighLight, error) {
 		return highls, fmt.Errorf("error getting relevant tokens for=%s", d.Content)
 	}
 
-	prevStart := 0
-	prevLine := 0
+	var prevStart uint32 = 0
+	var prevLine uint32 = 0
 
 	for _, tok := range tokens {
 		//fmt.Println(tok.Content(d.byteContent))
 
-		t := tok.Type()
+		t := tok.Type
 
-		l := int(tok.StartPoint().Row)
+		l := tok.Start.Row
 		if l != prevLine {
 			prevStart = 0
 		}
-		c := int(tok.StartPoint().Column)
-		length := int(tok.EndPoint().Column - tok.StartPoint().Column)
+		c := tok.Start.Column
+		length := tok.End.Column - tok.Start.Column
 		ms := []string{}
 
 		deltaChar := c - prevStart
@@ -90,12 +90,13 @@ func (d *Document) GetHighLights() ([]HighLight, error) {
 		}
 		highls = append(highls, h)
 	}
+
 	return highls, nil
 }
 
-func (d *Document) queryTokens() ([]*sitter.Node, error) {
+func (d *Document) queryTokens() ([]SemanticToken, error) {
 
-	tokens := []*sitter.Node{}
+	tokens := []SemanticToken{}
 	qs := `
 				"let" @keyword
 				"fn" @keyword
@@ -129,24 +130,100 @@ func (d *Document) queryTokens() ([]*sitter.Node, error) {
 		}
 		//m = qc.FilterPredicates(m, []byte(d.Content))
 		for _, c := range m.Captures {
-			//fmt.Println(c.Node.Type())
-			//fmt.Println(c.Node.StartPoint())
+
 			if c.Node.Type() == "let_statement" {
-				tokens = append(tokens, c.Node.ChildByFieldName("left"))
+				st := getVarNameToken(c)
+				tokens = append(tokens, st)
 				break
 			}
-			//if c.Node.Type() == "identifier" {
-			//tokens = append(tokens, c.Node)
-			//break
-			//}
+
 			if c.Node.Type() == "function_call" {
-				tokens = append(tokens, c.Node.Child(0))
+				st := getFuncNameToken(c)
+				tokens = append(tokens, st)
 				break
 			}
-			tokens = append(tokens, c.Node)
+
+			st := SemanticToken{}
+			st.Start = Position{
+				c.Node.StartPoint().Row,
+				c.Node.StartPoint().Column,
+			}
+			st.End = Position{
+				c.Node.EndPoint().Row,
+				c.Node.EndPoint().Column,
+			}
+			st.Type = c.Node.Type()
+
+			tokens = append(tokens, st)
 		}
 	}
 
 	return tokens, nil
 
+}
+
+func getVarNameToken(c sitter.QueryCapture) SemanticToken {
+
+	st := SemanticToken{}
+	identifierNode := c.Node.ChildByFieldName("left")
+
+	st.Start = Position{
+		identifierNode.StartPoint().Row,
+		identifierNode.StartPoint().Column,
+	}
+
+	st.End = Position{
+		identifierNode.EndPoint().Row,
+		identifierNode.EndPoint().Column,
+	}
+
+	st.Type = identifierNode.Type()
+	return st
+}
+
+func getFuncNameToken(c sitter.QueryCapture) SemanticToken {
+	st := SemanticToken{}
+	functionNameNode := c.Node.Child(0)
+	st.Start = Position{
+		functionNameNode.StartPoint().Row,
+		functionNameNode.StartPoint().Column,
+	}
+	st.End = Position{
+		functionNameNode.EndPoint().Row,
+		functionNameNode.EndPoint().Column,
+	}
+	st.Type = functionNameNode.Type()
+	return st
+
+}
+
+type DocumentDiagnosticSeverity int
+
+const (
+	ERROR       DocumentDiagnosticSeverity = 1
+	WARNING     DocumentDiagnosticSeverity = 2
+	INFORMATION DocumentDiagnosticSeverity = 3
+	HINT        DocumentDiagnosticSeverity = 4
+)
+
+type DocumentPosition struct {
+	Line int
+	Char int
+}
+
+type DocumentDiagnostics struct {
+	Start   DocumentPosition
+	End     DocumentPosition
+	Severty DocumentDiagnosticSeverity
+	Source  string
+	Message string
+}
+
+func (d *Document) Diagnostics() []DocumentDiagnostics {
+	_ = d.queryErrorNodes()
+	return []DocumentDiagnostics{}
+}
+
+func (d *Document) queryErrorNodes() []*sitter.Node {
+	return []*sitter.Node{}
 }

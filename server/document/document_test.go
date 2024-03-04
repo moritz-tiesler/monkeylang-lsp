@@ -112,8 +112,8 @@ func TestQueryFuncTokens(t *testing.T) {
 	}
 
 	for i, tok := range tokens {
-		if tok.Type() != expected_types[i] {
-			t.Errorf("token type error. want=%s, got=%s", expected_types[i], tok.Type())
+		if tok.Type != expected_types[i] {
+			t.Errorf("token type error. want=%s, got=%s", expected_types[i], tok.Type)
 		}
 	}
 
@@ -142,8 +142,8 @@ func TestQueryStringTokens(t *testing.T) {
 	}
 
 	for i, tok := range tokens {
-		if tok.Type() != expected_types[i] {
-			t.Errorf("token type error. want=%s, got=%s", expected_types[i], tok.Type())
+		if tok.Type != expected_types[i] {
+			t.Errorf("token type error. want=%s, got=%s", expected_types[i], tok.Type)
 		}
 	}
 
