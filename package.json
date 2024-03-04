@@ -9,9 +9,6 @@
   "engines": {
     "vscode": "^1.75.0"
   },
-  "activationEvents": [
-    "onLanguage:monkey"
-  ],
   "main": "./client/out/extension",
   "contributes": {
     "languages": [
@@ -20,7 +17,8 @@
         "extensions": [
           ".mky"
         ],
-        "aliases": ["Monkey", "Monkeylang"]
+        "aliases": ["Monkey", "Monkeylang"],
+        "configuration": "./language-configuration.json"
       }
     ],
     "configuration": {
