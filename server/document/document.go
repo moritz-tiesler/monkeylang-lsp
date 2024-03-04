@@ -9,11 +9,12 @@ import (
 )
 
 type Document struct {
-	Parser      *sitter.Parser
-	Content     string
-	Uri         string
-	byteContent []byte
-	Tree        *sitter.Tree
+	Parser                  *sitter.Parser
+	Content                 string
+	Uri                     string
+	byteContent             []byte
+	Tree                    *sitter.Tree
+	NeedsReFreshDiagnostics bool
 }
 
 func New(content string) *Document {

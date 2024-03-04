@@ -257,12 +257,19 @@ func AddTokenLegend(h *protocol.ServerCapabilities) {
 }
 
 func (s *Server) refreshDiagnostics(doc *document.Document, notify glsp.NotifyFunc, delay bool) {
+	if doc.NeedsReFreshDiagnostics {
+		return
+	}
+
 	myServer.glspServer.Log.Info("calculation diagnostics")
+	doc.NeedsReFreshDiagnostics = true
+
 	go func() {
 
 		if delay {
 			time.Sleep(1 * time.Second)
 		}
+		doc.NeedsReFreshDiagnostics = false
 
 		diagnostics := []protocol.Diagnostic{}
 		for _, d := range doc.Diagnostics() {
