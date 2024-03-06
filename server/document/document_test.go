@@ -151,3 +151,50 @@ func TestQueryStringTokens(t *testing.T) {
 	//fmt.Println(t.Content(doc.byteContent))
 	//}
 }
+
+func TestQueryErrors(t *testing.T) {
+	doc := New(
+		`let myStr == "abc"`)
+
+	tokens, err := doc.querySyntaxErrors()
+
+	if err != nil {
+		t.Errorf("error getting errots from=%s", doc.Content)
+	}
+
+	expected := []string{
+		"ERROR",
+	}
+
+	if len(tokens) != len(expected) {
+		t.Errorf("expected %d tokens from %s, got=%d",
+			len(tokens), doc.Tree.RootNode().String(), len(expected))
+	}
+}
+
+func TestGetDiagnostics(t *testing.T) {
+	doc := New(
+		`let myStr == "abc"`)
+
+	diags := doc.GetDiagnostics()
+
+	expected := []Diagnostic{
+		{
+			Start:   DocumentPosition{0, 11},
+			End:     DocumentPosition{0, 12},
+			Severty: 1,
+			Message: "Syntax Error",
+		},
+	}
+
+	if len(diags) != len(expected) {
+		t.Errorf("wrong number of diagnostics. expected=%d, got=%d", len(expected), len(diags))
+
+	}
+
+	for i, d := range diags {
+		if expected[i] != d {
+			t.Errorf("wrong diagnostic: expected=%v, got=%v", expected[i], d)
+		}
+	}
+}

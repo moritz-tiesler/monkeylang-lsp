@@ -267,12 +267,12 @@ func (s *Server) refreshDiagnostics(doc *document.Document, notify glsp.NotifyFu
 	go func() {
 
 		if delay {
-			time.Sleep(1 * time.Second)
+			time.Sleep(500 * time.Millisecond)
 		}
 		doc.NeedsReFreshDiagnostics = false
 
 		diagnostics := []protocol.Diagnostic{}
-		for _, d := range doc.Diagnostics() {
+		for _, d := range doc.GetDiagnostics() {
 
 			var severity protocol.DiagnosticSeverity
 
@@ -289,16 +289,17 @@ func (s *Server) refreshDiagnostics(doc *document.Document, notify glsp.NotifyFu
 
 			pDiagnostic := protocol.Diagnostic{
 				Range: protocol.Range{
-					Start: protocol.Position{Line: uint32(d.Start.Line), Character: uint32(d.Start.Char)},
-					End:   protocol.Position{Line: uint32(d.Start.Line), Character: uint32(d.Start.Char)},
+					Start: protocol.Position{Line: d.Start.Line, Character: d.Start.Char},
+					End:   protocol.Position{Line: d.End.Line, Character: d.End.Char},
 				},
 				Severity: &severity,
+				Message:  d.Message,
 			}
 
 			diagnostics = append(diagnostics, pDiagnostic)
 		}
 
-		myServer.glspServer.Log.Info("sending diagnostics")
+		myServer.glspServer.Log.Info(fmt.Sprintf("sending diagnostics for doc=%s", doc.Uri))
 
 		go notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
 			URI:         doc.Uri,

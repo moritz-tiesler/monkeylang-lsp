@@ -95,6 +95,47 @@ func (d *Document) GetHighLights() ([]HighLight, error) {
 	return highls, nil
 }
 
+type Error struct {
+	Start   Position
+	End     Position
+	Message string
+}
+
+func (d *Document) querySyntaxErrors() ([]Error, error) {
+	errors := []Error{}
+	qs := `
+		(ERROR) @error
+	`
+	q, err := sitter.NewQuery([]byte(qs), monkeylang.GetLanguage())
+	if err != nil {
+		panic(err)
+	}
+	qc := sitter.NewQueryCursor()
+	qc.Exec(q, d.Tree.RootNode())
+
+	for {
+		m, ok := qc.NextMatch()
+		if !ok {
+			break
+		}
+		for _, c := range m.Captures {
+			e := Error{
+				Start: Position{
+					Row:    c.Node.StartPoint().Row,
+					Column: c.Node.StartPoint().Column,
+				},
+				End: Position{
+					Row:    c.Node.EndPoint().Row,
+					Column: c.Node.EndPoint().Column,
+				},
+			}
+			errors = append(errors, e)
+		}
+	}
+
+	return errors, nil
+}
+
 func (d *Document) queryTokens() ([]SemanticToken, error) {
 
 	tokens := []SemanticToken{}
@@ -208,11 +249,11 @@ const (
 )
 
 type DocumentPosition struct {
-	Line int
-	Char int
+	Line uint32
+	Char uint32
 }
 
-type DocumentDiagnostics struct {
+type Diagnostic struct {
 	Start   DocumentPosition
 	End     DocumentPosition
 	Severty DocumentDiagnosticSeverity
@@ -220,11 +261,27 @@ type DocumentDiagnostics struct {
 	Message string
 }
 
-func (d *Document) Diagnostics() []DocumentDiagnostics {
-	_ = d.queryErrorNodes()
-	return []DocumentDiagnostics{}
-}
+func (d *Document) GetDiagnostics() []Diagnostic {
+	errors, _ := d.querySyntaxErrors()
 
-func (d *Document) queryErrorNodes() []*sitter.Node {
-	return []*sitter.Node{}
+	diagnostics := []Diagnostic{}
+
+	for _, e := range errors {
+		diag := Diagnostic{
+			Start: DocumentPosition{
+				Line: e.Start.Row,
+				Char: e.Start.Column,
+			},
+			End: DocumentPosition{
+				Line: e.End.Row,
+				Char: e.End.Column,
+			},
+			Severty: ERROR,
+			Source:  d.Uri,
+			Message: "Syntax Error",
+		}
+		diagnostics = append(diagnostics, diag)
+	}
+
+	return diagnostics
 }
