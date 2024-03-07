@@ -81,6 +81,50 @@ func TestQueryTokens(t *testing.T) {
 	}
 }
 
+func TestQueryOperatorErrors(t *testing.T) {
+	doc := New(
+		`1 + true
+"abc" + 1
+true + 4
+myFunc(1 + true)
+myVar + true
+`)
+
+	tokens, err := doc.queryBinaryOpErrors()
+	if err != nil {
+		t.Errorf("error getting tokens from=%s", doc.Content)
+	}
+
+	expected := []Error{
+		{
+			Start: Position{0, 2},
+			End:   Position{0, 3},
+		},
+		{
+			Start: Position{1, 6},
+			End:   Position{1, 7},
+		},
+		{
+			Start: Position{2, 5},
+			End:   Position{2, 6},
+		},
+		{
+			Start: Position{3, 9},
+			End:   Position{3, 10},
+		},
+	}
+
+	if len(tokens) != len(expected) {
+		t.Errorf("wrong number of errors: expected=%d, got=%d", len(expected), len(tokens))
+	}
+
+	for i, e := range tokens {
+		if e != expected[i] {
+			t.Errorf("wrong error node: expected=%v, got=%v", expected[i], e)
+		}
+	}
+}
+
 func TestQueryFuncTokens(t *testing.T) {
 	doc := New(
 		`let double = fn(a) {a * 2;}

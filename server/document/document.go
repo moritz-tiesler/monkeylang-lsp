@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"monkeylang-server/monkeylang"
+	"slices"
 
 	sitter "github.com/smacker/go-tree-sitter"
 )
@@ -136,6 +137,76 @@ func (d *Document) querySyntaxErrors() ([]Error, error) {
 	return errors, nil
 }
 
+func (d *Document) queryBinaryOpErrors() ([]Error, error) {
+	errors := []Error{}
+	qs := `
+	[
+		(binary_expression
+			(boolean) 
+			(_) 
+			[
+				(number)
+				(string_literal)
+			] 
+		) 
+
+		(binary_expression
+			(string_literal) 
+			(_)
+			[
+				(number)
+				(boolean)
+			] 
+		)
+
+		(binary_expression
+			(number) 
+			(_)
+			[
+				(string_literal)
+				(boolean)
+			] 
+		) 
+	] @binop
+
+	 
+	`
+	q, err := sitter.NewQuery([]byte(qs), monkeylang.GetLanguage())
+	if err != nil {
+		panic(err)
+	}
+	qc := sitter.NewQueryCursor()
+	qc.Exec(q, d.Tree.RootNode())
+
+	for {
+		m, ok := qc.NextMatch()
+		if !ok {
+			break
+		}
+		m = qc.FilterPredicates(m, d.byteContent)
+		for _, c := range m.Captures {
+			opNode := c.Node.Child(1)
+			if opNode == nil {
+				continue
+			}
+			e := Error{
+				Start: Position{
+					Row:    opNode.StartPoint().Row,
+					Column: opNode.StartPoint().Column,
+				},
+				End: Position{
+					Row:    opNode.EndPoint().Row,
+					Column: opNode.EndPoint().Column,
+				},
+			}
+			errors = append(errors, e)
+			break
+		}
+	}
+
+	return errors, nil
+}
+
 func (d *Document) queryTokens() ([]SemanticToken, error) {
 
 	tokens := []SemanticToken{}
@@ -262,11 +333,14 @@ type Diagnostic struct {
 }
 
 func (d *Document) GetDiagnostics() []Diagnostic {
-	errors, _ := d.querySyntaxErrors()
+	syntaxErrors, _ := d.querySyntaxErrors()
+	binOpErrors, _ := d.queryBinaryOpErrors()
+
+	docErrors := slices.Concat[[]Error](syntaxErrors, binOpErrors)
 
 	diagnostics := []Diagnostic{}
 
-	for _, e := range errors {
+	for _, e := range docErrors {
 		diag := Diagnostic{
 			Start: DocumentPosition{
 				Line: e.Start.Row,
