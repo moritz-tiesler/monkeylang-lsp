@@ -1,10 +1,10 @@
 {
-  "name": "REPLACE_ME",
-  "description": "REPLACE_ME",
-  "author": "REPLACE_ME",
+  "name": "MonkeyLSP",
+  "description": "Monkey LSP",
+  "author": "Moritz Tiesler",
   "license": "MIT",
   "version": "1.0.0",
-  "publisher": "REPLACE_ME",
+  "publisher": "Moritz Tiesler",
   "categories": [],
   "engines": {
     "vscode": "^1.75.0"
@@ -13,11 +13,11 @@
   "contributes": {
     "languages": [
       {
-        "id": "monkey",
+        "id": "Monkey",
         "extensions": [
-          ".mky"
+          "mky"
         ],
-        "aliases": ["Monkey", "Monkeylang"],
+        "aliases": ["Monkeylang"],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -47,7 +47,7 @@
       }
     },
     "configurationDefaults": {
-      "[monkey]": {
+      "[Monkey]": {
         "editor.semanticHighlighting.enabled": true
       }
     }
