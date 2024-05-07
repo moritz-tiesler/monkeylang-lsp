@@ -5,3 +5,5 @@ This Extension currently provides
 - Syntax Error Reporting
 
 Inspired by [Jeffrey Chupp's Tutorial](https://github.com/semanticart/minimum-viable-vscode-language-server-extension).
+
+Powered by [Tree-sitter](https://tree-sitter.github.io/tree-sitter/).
