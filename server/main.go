@@ -44,6 +44,7 @@ func main() {
 		TextDocumentSemanticTokensFull: highlight,
 		// TextDocumentSemanticTokensRange:     highlightRange,
 		// TextDocumentSemanticTokensFullDelta: highLightRangeDelta,
+		TextDocumentCompletion: complete,
 	}
 
 	myServer = Server{
@@ -114,6 +115,10 @@ func didChange(context *glsp.Context, params *protocol.DidChangeTextDocumentPara
 }
 
 func complete(context *glsp.Context, params *protocol.CompletionParams) (any, error) {
+	requestPos := params.TextDocumentPositionParams.Position
+	pos := document.DocumentPosition{Line: requestPos.Line, Char: requestPos.Character}
+	_, _ = doc.GetMethodCompletions(pos)
+
 	return protocol.CompletionList{
 		IsIncomplete: false,
 		Items: []protocol.CompletionItem{

@@ -242,3 +242,37 @@ func TestGetDiagnostics(t *testing.T) {
 		}
 	}
 }
+
+func TestQueryAvailableMethods(t *testing.T) {
+	doc := New(
+		`
+let proc = fn() {return 2}
+let funcA = fn(a) {a + 2}
+let funcB = fn(a, b) { a + b }
+let res = 2.
+let unavailableFunc = fn(b) {b * 2}
+`)
+
+	triggerPos := DocumentPosition{Line: 5, Char: 12}
+	methodNames, _ := doc.GetMethodCompletions(triggerPos)
+
+	expected := []MethodData{
+		{
+			Name: "funcA",
+		},
+		{
+			Name: "funcB",
+		},
+	}
+
+	if len(methodNames) != len(expected) {
+		t.Errorf("wrong number of methods. expected=%d, got=%d", len(expected), len(methodNames))
+
+	}
+
+	for i, d := range methodNames {
+		if expected[i] != d {
+			t.Errorf("wrong methodname: expected=%v, got=%v", expected[i], d)
+		}
+	}
+}

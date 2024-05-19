@@ -15,6 +15,7 @@ type Document struct {
 	Uri                     string
 	byteContent             []byte
 	Tree                    *sitter.Tree
+	CompletionTree          *sitter.Tree
 	NeedsReFreshDiagnostics bool
 }
 
@@ -23,11 +24,12 @@ func New(content string) *Document {
 	parser.SetLanguage(monkeylang.GetLanguage())
 	tree, _ := parser.ParseCtx(context.Background(), nil, []byte(content))
 	return &Document{
-		Parser:      parser,
-		Content:     content,
-		Uri:         "",
-		byteContent: []byte(content),
-		Tree:        tree,
+		Parser:         parser,
+		Content:        content,
+		Uri:            "",
+		byteContent:    []byte(content),
+		Tree:           tree,
+		CompletionTree: nil,
 	}
 }
 
@@ -94,6 +96,11 @@ func (d *Document) GetHighLights() ([]HighLight, error) {
 	}
 
 	return highls, nil
+}
+
+func (d *Document) GetMethodCompletions(pos DocumentPosition) ([]MethodData, error) {
+	ms, err := d.queryAvailableMethods(pos)
+	return ms, err
 }
 
 type Error struct {
@@ -270,9 +277,64 @@ func (d *Document) queryTokens() ([]SemanticToken, error) {
 			tokens = append(tokens, st)
 		}
 	}
+	qc.Close()
 
 	return tokens, nil
 
+}
+
+type MethodData struct {
+	Name string
+}
+
+func (d *Document) queryAvailableMethods(triggerPos DocumentPosition) ([]MethodData, error) {
+	methods := []MethodData{}
+	// TODO query methods that have at least one parameter
+	qs := `
+				(let_statement
+					left: (identifier) @func_name
+					"=" 
+					right: (function
+								(parameters
+									(parameter)+ 
+								) 
+								(body) 
+						   ) @function 
+				) @let_statement
+	`
+
+	q, err := sitter.NewQuery([]byte(qs), monkeylang.GetLanguage())
+	if err != nil {
+		panic(err)
+	}
+	qc := sitter.NewQueryCursor()
+	qStart := sitter.Point{Row: 1, Column: 1}
+	qEnd := sitter.Point{Row: triggerPos.Line, Column: triggerPos.Char}
+	qc.SetPointRange(qStart, qEnd)
+	qc.Exec(q, d.Tree.RootNode())
+
+	for {
+		m, ok := qc.NextMatch()
+		if !ok {
+			break
+		}
+		//m = qc.FilterPredicates(m, []byte(d.Content))
+		for _, c := range m.Captures {
+
+			if c.Node.Type() == "let_statement" {
+				md := getFuncName(c, d.byteContent)
+				start := c.Node.StartPoint()
+				end := c.Node.EndPoint()
+				fmt.Printf("start=%v, end=%v", start, end)
+				methods = append(methods, md)
+				break
+			}
+
+		}
+	}
+	qc.Close()
+
+	return methods, nil
 }
 
 func getVarNameToken(c sitter.QueryCapture) SemanticToken {
@@ -310,6 +372,15 @@ func getFuncNameToken(c sitter.QueryCapture) SemanticToken {
 
 }
 
+func getFuncName(c sitter.QueryCapture, input []byte) MethodData {
+	md := MethodData{}
+	n := c.Node.Child(1)
+	functionName := n.Content(input)
+	md.Name = functionName
+	return md
+
+}
+
 type DocumentDiagnosticSeverity int
 
 const (
@@ -336,7 +407,7 @@ func (d *Document) GetDiagnostics() []Diagnostic {
 	syntaxErrors, _ := d.querySyntaxErrors()
 	binOpErrors, _ := d.queryBinaryOpErrors()
 
-	docErrors := slices.Concat[[]Error](syntaxErrors, binOpErrors)
+	docErrors := slices.Concat(syntaxErrors, binOpErrors)
 
 	diagnostics := []Diagnostic{}
 
