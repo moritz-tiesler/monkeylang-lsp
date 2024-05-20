@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -35,12 +36,11 @@ func main() {
 	commonlog.Configure(1, &path)
 
 	handler = protocol.Handler{
-		Initialize:            initialize,
-		Initialized:           initialized,
-		Shutdown:              shutdown,
-		SetTrace:              setTrace,
-		TextDocumentDidChange: didChange,
-		//TextDocumentCompletion:              complete,
+		Initialize:                     initialize,
+		Initialized:                    initialized,
+		Shutdown:                       shutdown,
+		SetTrace:                       setTrace,
+		TextDocumentDidChange:          didChange,
 		TextDocumentSemanticTokensFull: highlight,
 		// TextDocumentSemanticTokensRange:     highlightRange,
 		// TextDocumentSemanticTokensFullDelta: highLightRangeDelta,
@@ -57,6 +57,7 @@ func main() {
 func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
 	capabilities := handler.CreateServerCapabilities()
 	SetTextDocumentSyncKind(&capabilities, protocol.TextDocumentSyncKindFull)
+	SetCompletionTriggerCharacters(&capabilities, []string{"."})
 	AddTokenLegend(&capabilities)
 
 	jsonBytes, err := json.Marshal(capabilities)
@@ -206,6 +207,16 @@ func SetTextDocumentSyncKind(capa *protocol.ServerCapabilities, kind protocol.Te
 	options.Change = &kind
 
 	return nil
+}
+
+func SetCompletionTriggerCharacters(capa *protocol.ServerCapabilities, chars []string) error {
+	completionOptions := capa.CompletionProvider
+	if completionOptions == nil {
+		return errors.New("CompletionsOptions are nil")
+	}
+	capa.CompletionProvider.TriggerCharacters = chars
+	return nil
+
 }
 
 func highlightRange(context *glsp.Context, params *protocol.SemanticTokensRangeParams) (any, error) {
