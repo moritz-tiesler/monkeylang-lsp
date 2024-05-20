@@ -117,22 +117,21 @@ func didChange(context *glsp.Context, params *protocol.DidChangeTextDocumentPara
 func complete(context *glsp.Context, params *protocol.CompletionParams) (any, error) {
 	requestPos := params.TextDocumentPositionParams.Position
 	pos := document.DocumentPosition{Line: requestPos.Line, Char: requestPos.Character}
-	_, _ = doc.GetMethodCompletions(pos)
+	methods, err := doc.GetMethodCompletions(pos)
+	if err != nil {
+		myServer.glspServer.Log.Error(fmt.Sprintf("completion error:=%s", err))
+		return nil, err
+	}
 
-	return protocol.CompletionList{
-		IsIncomplete: false,
-		Items: []protocol.CompletionItem{
-			{
-				Label: "Monkeylang",
-			},
-			{
-				Label: "LSP",
-			},
-			{
-				Label: "Lua",
-			},
-		},
-	}, nil
+	completionList := make([]protocol.CompletionItem, len(methods))
+
+	for i, c := range methods {
+		completionList[i] = protocol.CompletionItem{Label: c.Name}
+	}
+
+	myServer.glspServer.Log.Infof(fmt.Sprintf("sending completion list=%v", completionList))
+
+	return completionList, err
 }
 
 func TokenTypeToIndex(tokenType string) (int, error) {

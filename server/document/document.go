@@ -305,7 +305,7 @@ func (d *Document) queryAvailableMethods(triggerPos DocumentPosition) ([]MethodD
 
 	q, err := sitter.NewQuery([]byte(qs), monkeylang.GetLanguage())
 	if err != nil {
-		panic(err)
+		return methods, err
 	}
 	qc := sitter.NewQueryCursor()
 	qStart := sitter.Point{Row: 1, Column: 1}
@@ -323,9 +323,6 @@ func (d *Document) queryAvailableMethods(triggerPos DocumentPosition) ([]MethodD
 
 			if c.Node.Type() == "let_statement" {
 				md := getFuncName(c, d.byteContent)
-				start := c.Node.StartPoint()
-				end := c.Node.EndPoint()
-				fmt.Printf("start=%v, end=%v", start, end)
 				methods = append(methods, md)
 				break
 			}
