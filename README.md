@@ -3,6 +3,7 @@ VS Code Language Server Extension for the [Monkey Language](https://github.com/m
 This Extension currently provides
 - Semantic Highlighting
 - Syntax Error Reporting
+- Code completion for declared function 
 
 Inspired by [Jeffrey Chupp's Tutorial](https://github.com/semanticart/minimum-viable-vscode-language-server-extension).
 
