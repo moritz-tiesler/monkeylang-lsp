@@ -57,11 +57,7 @@ func main() {
 func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
 	capabilities := handler.CreateServerCapabilities()
 	SetTextDocumentSyncKind(&capabilities, protocol.TextDocumentSyncKindFull)
-	err := SetCompletionTriggerCharacters(&capabilities, []string{"."})
-	if err != nil {
-		myServer.glspServer.Log.Info(fmt.Sprintf("error setting completion char: %s", err))
-		panic(err)
-	}
+	SetCompletionTriggerCharacters(&capabilities, []string{"."})
 	AddTokenLegend(&capabilities)
 
 	jsonBytes, err := json.Marshal(capabilities)
